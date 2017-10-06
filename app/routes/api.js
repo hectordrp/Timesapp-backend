@@ -3,7 +3,7 @@
 const express = require('express');
 const router = express.Router();  // get an instance of the express Router
 const User = require('../models/user');   // our user model
-
+const Card = require('../models/card');   // our card model
 
 // ROUTES FOR OUR API
 // =============================================================================
@@ -93,5 +93,80 @@ router.route('/user/:name')
       res.json({message: 'User deleted' })
     });
   });
+
+// Card route
+
+router.route('/cards')
+.post( (req, res) => {
+  var card = new Card();
+  if(req.body.title)
+    card.title = req.body.title;
+
+  if(req.body.username)
+    card.owner = req.body.username;
+
+  if(req.body.team)
+    card.ownerTeam = req.body.team;
+
+  if(req.body.estimatedTime)
+    card.estimatedTime = req.body.estimatedTime;
+
+  if(req.body.notification)
+    card.notification = req.body.notification;
+
+  if(req.body.description)
+    card.description = req.body.description;
+
+  card.save( (err) => {
+    if(err){
+      console.log(err);
+      res.send({ errmsg: err.message});
+    }else{
+      res.json({ message: card});
+   }
+  });
+
+})
+
+.get( (req, res) => {
+
+  Card.find( (err, cards) => {
+    if (err)
+      res.send(err);
+
+    res.json(cards);
+  })
+
+});
+
+
+router.route('/cards/:owner')
+  .get( (req, res) => {
+    Card.find({owner: req.params.owner}, (err, cards) => {
+      if(err)
+        res.send(err);
+
+      res.json(cards);
+    })
+  });
+
+router.route('/card/:id')
+  .put( (req, res) => {
+    User.find({_id: req.params.id}, (err, card) => {
+        if(err)
+          res.send(err);
+
+      if(card !== null){
+        user.save((err) => {
+          if(err)
+            res.send(err);
+
+        res.json( { message: 'card updated!'});
+        });
+      } else {
+      res.json( { error: 'An error has just ocurred while updating the card...'})
+    }
+    })
+  })
 
 module.exports = router;
