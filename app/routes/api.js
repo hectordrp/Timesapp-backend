@@ -95,7 +95,7 @@ router.route('/user/:name')
   });
 
 // Card route
-
+// ----------------------------------------------------
 router.route('/cards')
 .post( (req, res) => {
   var card = new Card();
@@ -139,7 +139,7 @@ router.route('/cards')
 
 });
 
-
+// show the cards of the owner
 router.route('/cards/:owner')
   .get( (req, res) => {
     Card.find({owner: req.params.owner}, (err, cards) => {
@@ -150,23 +150,70 @@ router.route('/cards/:owner')
     })
   });
 
+// show card by id or modify it
 router.route('/card/:id')
+  .get( (req, res) => {
+    Card.find({_id: req.params.id}, (err, card) => {
+    if(err)
+      res.send(err);
+
+    res.json(card);
+  })
+})
+
   .put( (req, res) => {
-    User.find({_id: req.params.id}, (err, card) => {
+    Card.findOne({_id: req.params.id}, (err, card) => {
         if(err)
           res.send(err);
-
+    // if the card id is incorrect, a message will display and not action will happen
       if(card !== null){
-        user.save((err) => {
-          if(err)
-            res.send(err);
+        // also if the card has status has 'done', we don't allow to update cards that are already finished
+          if(card.status !== 'done'){
+            if(req.body.status)
+              card.status = req.body.status;
 
-        res.json( { message: 'card updated!'});
-        });
+            if(req.body.title)
+              card.title = req.body.title;
+
+            if(req.body.timeEntry)
+              card.timeEntry = req.body.timeEntry;
+
+            if(req.body.timeEnd)
+              card.timeEnd = req.body.timeEnd;
+
+            if(req.body.estimatedTime)
+              card.estimatedTime = req.body.estimatedTime;
+
+            if(req.body.notification)
+              card.notification = req.body.notification;
+
+            if(req.body.description)
+              card.description = req.body.description;
+            card.save((err) => {
+              if(err)
+                res.send(err);
+
+            res.json( { message: 'card updated!'});
+            });
+          }else{
+            res.json( { message: 'Can\'t modify cards that are done'})
+          }
       } else {
-      res.json( { error: 'An error has just ocurred while updating the card...'})
+        res.json( { error: 'An error has just ocurred while updating the card...'})
     }
     })
-  })
+  });
+
+  router.route('/cards/team/:team')
+    .get( (req, res) => {
+      Card.find({ownerTeam: req.params.team}, (err, cards) => {
+    if(err)
+      res.send(err);
+
+    res.json(cards);
+    })
+  });
+
+
 
 module.exports = router;
