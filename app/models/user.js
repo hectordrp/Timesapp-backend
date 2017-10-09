@@ -5,7 +5,7 @@ var Schema       = mongoose.Schema;
 var userSchema   = new Schema({
     username: { type: String, unique: true, required: [true, 'Username must be provided'], minlength: 6, maxlength: 20, lowercase:true},
     email: { type: String, unique: true, required: [true, 'Email must be provided'], lowercase:true},
-    name: { type: String, lowercase:true, minlength: 6, maxlength: 30, default: ''},
+    name: { type: String, lowercase:true, minlength: 0, maxlength: 30, default: ''},
     role: { type: String, lowercase:true, minlength: 3, maxlength: 10, default: 'user'},
     settings: {
       avatar: {type: String, lowercase:true, maxlength: 100, default: ''},
@@ -15,6 +15,12 @@ var userSchema   = new Schema({
     created_at: { type: Date, default: Date.now},
     modified_at: { type: Date, default: Date.now}
 });
+
+// username validation
+userSchema.path('username').validate(function (username) {
+  var usernameRegex = /^[a-z0-9ñ]*$/;
+  return usernameRegex.test(username);
+}, 'Validation error.');
 
 // email validation
 userSchema.path('email').validate(function (email) {

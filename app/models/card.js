@@ -3,18 +3,18 @@ var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
 
 var cardSchema   = new Schema({
-    status: { type: String, required: true, default: 'todo' },
-    title: { type: String, required: true },
-    owner: { type: String, required: true, lowercase: true},
-    ownerTeam: { type: String, required: true, lowercase: true, default: ''},
-    timeEntry: { type: Date},
-    timeEnd: { type: Date},
-    spentTime: {type: Number},
-    estimatedTime: {type: Number, default: null},
-    notification: {type: Boolean, default: true},
-    description: { type: String, default: null},
-    created_at: { type: Date, default: Date.now},
-    modified_at: { type: Date, default: Date.now}
+      status: { type: String, required: true, minlength: 3, maxlength: 8, trim: true, default: 'todo' },
+      title: { type: String, required: true, minlength: 1, maxlength: 100},
+      owner: { type: String, required: true, lowercase: true, minlength: 6, maxlength: 20},
+      ownerTeam: { type: String, required: true, lowercase: true, minlength: 4, maxlength: 20, default: null},
+      timeEntry: { type: Date},
+      timeEnd: { type: Date},
+      spentTime: {type: Number},
+      estimatedTime: {type: Number, default: null},
+      notification: {type: Boolean, default: true},
+      description: { type: String, minlength: 0, maxlength: 300, default: null},
+      created_at: { type: Date, default: Date.now},
+      modified_at: { type: Date, default: Date.now}
 });
 
 cardSchema.pre('save', function(next) {
@@ -28,13 +28,14 @@ cardSchema.pre('save', function(next) {
   }
 
 
-// here is to calculate the spend time during the task in its cyrcle of life, it only occur when timeEnd is sending through the request
-  if(this.timeEntry && this.timeEnd && !this.spentTime)
+// Calculate the spent time during the task in its cyrcle of life, it only occur when timeEnd is sent through the request
+  if(this.timeEntry && this.timeEnd && !this.spentTime){
     entryTime = this.timeEntry;
     endingTime = this.timeEnd;
     diffMs = (Math.abs(endingTime.getTime() - entryTime.getTime()));
     diffMinutes = diffMs / 60000;
-    this.spentTime = diffMinutes;
+    this.spentTime = Math.round(diffMinutes);
+  }
 
   next();
 });

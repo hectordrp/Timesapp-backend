@@ -26,14 +26,19 @@ router.get('/', function(req, res) {
 router.route('/users')
   .post( (req, res) => {
     var user = new User();
-    console.log(req.body);
     user.username = req.body.username;
     user.email = req.body.email
-    user.name = req.body.name;
+    if(req.body.name)
+      user.name = req.body.name;
+
+    if(req.body.role)
+      user.role = req.body.role;
+
+    if(req.body.avatar)
+      user.settings.avatar = req.body.avatar;
 
     user.save( (err) => {
       if(err){
-        console.log(err);
         res.send({ errmsg: err.message});
       }else{
         res.json({ message: user});
@@ -43,7 +48,6 @@ router.route('/users')
   })
 
   .get( (req, res) => {
-
     User.find( (err, users) => {
       if (err)
         res.send(err);
@@ -56,9 +60,9 @@ router.route('/users')
 // on routes that end in /users/:user_id
 // ----------------------------------------------------
 
-router.route('/user/:name')
+router.route('/user/:username')
   .get( (req, res) => {
-    User.find({name: req.params.name}, (err, user) => {
+    User.find({username: req.params.username}, (err, user) => {
       if(err)
         res.send(err);
 
@@ -67,33 +71,47 @@ router.route('/user/:name')
   })
 
   .put( (req, res) => {
-    User.findOne({name: req.params.name}, (err, user) => {
+    User.findOne({username: req.params.username}, (err, user) => {
         if(err)
           res.send(err);
+  //If user exist and the request has parameters it will modify the user
+      if(user !== null && Object.keys(req.body).length > 0){
+        if(req.body.name)
+          user.name = req.body.name;
 
-      if(user !== null){
-        user.name = req.body.name;
-        var newUser = user;
+        if(req.body.notificationTime)
+          user.settings.notificationTime = req.body.notificationTime;
+
+        if(req.body.workTime)
+          user.settings.workTime = req.body.workTime;
+
         user.save((err) => {
-          if(err)
-            res.send(err);
-
-        res.json( { message: 'User updated!, ', newUser});
+          if(err){
+            res.json({ error: err.message});
+          } else {
+            res.json( { message: 'User has been updated!'});
+          }
         });
+
       } else {
-      res.json( { error: 'An error has just ocurred while updating...'})
+        res.json( { error: 'An error has just ocurred while updating...'})
     }
     })
   })
 
   .delete( (req, res) => {
     User.remove({
-      _id: req.params.user_id
-    }, (err, user) => {
+      username: req.params.username,
+      _id: req.body.userId
+    }, function(err, user){
       if(err)
         res.send(err);
 
-      res.json({message: 'User deleted' })
+        if(user.result.n > 0){
+          res.json({message: 'User deleted', user })
+        } else {
+          res.json({error:'Error while deleting user'})
+        }
     });
   });
 
@@ -102,11 +120,8 @@ router.route('/user/:name')
 router.route('/cards')
 .post( (req, res) => {
   var card = new Card();
-  if(req.body.title)
-    card.title = req.body.title;
-
-  if(req.body.username)
-    card.owner = req.body.username;
+  card.title = req.body.title;
+  card.owner = req.body.username;
 
   if(req.body.team)
     card.ownerTeam = req.body.team;
@@ -122,7 +137,6 @@ router.route('/cards')
 
   card.save( (err) => {
     if(err){
-      console.log(err);
       res.send({ errmsg: err.message});
     }else{
       res.json({ message: card});
@@ -132,8 +146,7 @@ router.route('/cards')
 })
 
 .get( (req, res) => {
-
-  Card.find( (err, cards) => {
+  Card.find( {}, null, {sort: {owner: 1}}, (err, cards) => {
     if (err)
       res.send(err);
 
@@ -156,7 +169,7 @@ router.route('/cards/:owner')
 // show card by id or modify it
 router.route('/card/:id')
   .get( (req, res) => {
-    Card.find({_id: req.params.id}, (err, card) => {
+    Card.find({ _id: req.params.id }, (err, card) => {
     if(err)
       res.send(err);
 
@@ -165,7 +178,7 @@ router.route('/card/:id')
 })
 
   .put( (req, res) => {
-    Card.findOne({_id: req.params.id}, (err, card) => {
+    Card.findOne({ owner: req.body.username, _id: req.params.id }, (err, card) => {
         if(err)
           res.send(err);
     // if the card id is incorrect, a message will display and not action will happen
@@ -192,11 +205,13 @@ router.route('/card/:id')
 
             if(req.body.description)
               card.description = req.body.description;
-            card.save((err) => {
-              if(err)
-                res.send(err);
 
-            res.json( { message: 'card updated!'});
+            card.save((err) => {
+              if(err){
+                res.json( { err: err.message} );
+              } else {
+                res.json( { message: 'card updated!'});
+              }
             });
           }else{
             res.json( { message: 'Can\'t modify cards that are done'})
@@ -209,7 +224,7 @@ router.route('/card/:id')
 
   router.route('/cards/team/:team')
     .get( (req, res) => {
-      Card.find({ownerTeam: req.params.team}, (err, cards) => {
+      Card.find({ownerTeam: req.params.team}, null, {sort: {owner: 1}}, (err, cards) => {
     if(err)
       res.send(err);
 
