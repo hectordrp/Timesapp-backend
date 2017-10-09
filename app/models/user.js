@@ -3,18 +3,24 @@ var mongoose     = require('mongoose');
 var Schema       = mongoose.Schema;
 
 var userSchema   = new Schema({
-    username: { type: String, unique: true, required:true, lowercase:true},
-    email: { type: String, unique: true, required:true, lowercase:true},
-    name: { type: String },
-    role: { type: String, required:true, lowercase:true, default: 'user'},
-    workTime: {type: Number, default:8},
+    username: { type: String, unique: true, required: [true, 'Username must be provided'], minlength: 6, maxlength: 20, lowercase:true},
+    email: { type: String, unique: true, required: [true, 'Email must be provided'], lowercase:true},
+    name: { type: String, lowercase:true, minlength: 6, maxlength: 30, default: ''},
+    role: { type: String, lowercase:true, minlength: 3, maxlength: 10, default: 'user'},
     settings: {
-      avatar: {type: String},
-      notificationTime: {type: Number}
+      avatar: {type: String, lowercase:true, maxlength: 100, default: ''},
+      notificationTime: {type: Number, min: 0.1, max:4, default: 0.5},
+      workTime: {type: Number, min: 1, max:10, default:8}
     },
     created_at: { type: Date, default: Date.now},
     modified_at: { type: Date, default: Date.now}
 });
+
+// email validation
+userSchema.path('email').validate(function (email) {
+   var emailRegex = /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/;
+   return emailRegex.test(email);
+}, 'Validation error.');
 
 userSchema.pre('save', function (next) {
 
@@ -29,7 +35,7 @@ userSchema.pre('save', function (next) {
 });
 
 userSchema.post('save', (doc) => {
-  console.log('%s has been saved', doc.name);
+  console.log('%s has been saved', doc.username);
 })
 
 module.exports = mongoose.model('User', userSchema);

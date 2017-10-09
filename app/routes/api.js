@@ -26,6 +26,9 @@ router.get('/', function(req, res) {
 router.route('/users')
   .post( (req, res) => {
     var user = new User();
+    console.log(req.body);
+    user.username = req.body.username;
+    user.email = req.body.email
     user.name = req.body.name;
 
     user.save( (err) => {
@@ -33,7 +36,7 @@ router.route('/users')
         console.log(err);
         res.send({ errmsg: err.message});
       }else{
-        res.json({ message: user.name});
+        res.json({ message: user});
      }
     });
 
