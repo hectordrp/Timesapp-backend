@@ -10,6 +10,7 @@ var cardSchema   = new Schema({
       timeEntry: { type: Date},
       timeEnd: { type: Date},
       spentTime: {type: Number},
+      _id: { type: Schema.Types.ObjectId, required:true, index:true, auto:true},
       estimatedTime: {type: Number, default: null},
       notification: {type: Boolean, default: true},
       description: { type: String, minlength: 0, maxlength: 300, default: null},

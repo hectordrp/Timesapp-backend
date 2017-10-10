@@ -150,7 +150,7 @@ router.route('/cards')
     if (err)
       res.send(err);
 
-    res.json(cards);
+    res.json({cards: cards});
   })
 
 });
