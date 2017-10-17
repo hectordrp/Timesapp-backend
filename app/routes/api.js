@@ -147,9 +147,10 @@ router.route('/cards')
 
 .get( (req, res) => {
   Card.find( {}, null, {sort: {owner: 1}}, (err, cards) => {
-    if (err)
-      res.send(err);
-
+    if (err){
+      res.send({error: err});
+      return next(err);
+    }
     res.json({cards: cards});
   })
 
@@ -162,7 +163,8 @@ router.route('/cards/:owner')
       if(err)
         res.send(err);
 
-      res.json(cards);
+      res.json({cards: cards});
+
     })
   });
 
@@ -183,6 +185,7 @@ router.route('/card/:id')
           res.send(err);
     // if the card id is incorrect, a message will display and not action will happen
       if(card !== null){
+        var username = req.body.username;
         // also if the card has status has 'done', we don't allow to update cards that are already finished
           if(card.status !== 'done'){
             if(req.body.status)
@@ -211,6 +214,7 @@ router.route('/card/:id')
                 res.json( { err: err.message} );
               } else {
                 res.json( { message: 'card updated!'});
+                req.io.sockets.emit('mutation', username);
               }
             });
           }else{
@@ -228,7 +232,7 @@ router.route('/card/:id')
     if(err)
       res.send(err);
 
-    res.json(cards);
+    res.json({ cards:cards});
     })
   });
 
