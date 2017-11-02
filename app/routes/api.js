@@ -39,7 +39,7 @@ router.route('/users')
 
     user.save( (err) => {
       if(err){
-        res.send({ errmsg: err.message});
+        res.status(400).send({ errmsg: err.message});
       }else{
         res.json({ message: user});
      }
@@ -57,7 +57,7 @@ router.route('/users')
 
   });
 
-// on routes that end in /users/:user_id
+// on routes that end in /users/:username
 // ----------------------------------------------------
 
 router.route('/user/:username')
@@ -66,7 +66,11 @@ router.route('/user/:username')
       if(err)
         res.send(err);
 
-      res.json(user);
+      if(user.length === 0){
+        res.status(400).send({ errmsg: 'user not found'});
+      } else {
+      res.json({user: user});
+      }
     })
   })
 
@@ -76,25 +80,33 @@ router.route('/user/:username')
           res.send(err);
   //If user exist and the request has parameters it will modify the user
       if(user !== null && Object.keys(req.body).length > 0){
+        let update = false;
         if(req.body.name)
+          update = true;
           user.name = req.body.name;
 
         if(req.body.notificationTime)
+          update = true;
           user.settings.notificationTime = req.body.notificationTime;
 
         if(req.body.workTime)
+          update = true;
           user.settings.workTime = req.body.workTime;
 
-        user.save((err) => {
-          if(err){
-            res.json({ error: err.message});
-          } else {
-            res.json( { message: 'User has been updated!'});
-          }
-        });
+        if(update){
+          user.save((err) => {
+            if(err){
+              res.status(400).json({ error: err.message});
+            } else {
+              res.json( { message: 'User has been updated!'});
+            }
+          });
+        } else {
+          res.status(400).json({error: 'only name, notificationTime, workTime can be edited'})
+        }
 
       } else {
-        res.json( { error: 'An error has just ocurred while updating...'})
+        res.status(400).json( { error: 'An error has just ocurred while updating...'})
     }
     })
   })
@@ -108,9 +120,9 @@ router.route('/user/:username')
         res.send(err);
 
         if(user.result.n > 0){
-          res.json({message: 'User deleted', user })
+          res.status(200).json({message: 'User deleted', user })
         } else {
-          res.json({error:'Error while deleting user'})
+          res.status(400).json({error:'Error while deleting user'})
         }
     });
   });
