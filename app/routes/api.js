@@ -80,20 +80,20 @@ router.route('/user/:username')
           res.send(err);
   //If user exist and the request has parameters it will modify the user
       if(user !== null && Object.keys(req.body).length > 0){
-        let update = false;
+        let canBeUpdated = false;
         if(req.body.name)
-          update = true;
+          canBeUpdated = true;
           user.name = req.body.name;
 
         if(req.body.notificationTime)
-          update = true;
+          canBeUpdated = true;
           user.settings.notificationTime = req.body.notificationTime;
 
         if(req.body.workTime)
-          update = true;
+          canBeUpdated = true;
           user.settings.workTime = req.body.workTime;
 
-        if(update){
+        if(canBeUpdated){
           user.save((err) => {
             if(err){
               res.status(400).json({ error: err.message});
@@ -149,9 +149,9 @@ router.route('/cards')
 
   card.save( (err) => {
     if(err){
-      res.send({ errmsg: err.message});
+      res.status(400).send({ errmsg: err.message});
     }else{
-      res.json({ message: card});
+      res.json({ card: card});
    }
   });
 
@@ -175,67 +175,102 @@ router.route('/cards/:owner')
       if(err)
         res.send(err);
 
-      res.json({cards: cards});
+      if(cards.length > 0){
+        res.json({cards: cards});
+      }else{
+        res.status(400).send('Wrong user')
+      }
 
     })
   });
 
-// show card by id or modify it
+// show card by id, modify it or delete it
 router.route('/card/:id')
   .get( (req, res) => {
     Card.find({ _id: req.params.id }, (err, card) => {
     if(err)
       res.send(err);
 
-    res.json(card);
+    if(card.length > 0){
+      res.json({card: card});
+    }else{
+      res.status(400).send('card not found');
+    }
   })
 })
 
   .put( (req, res) => {
-    Card.findOne({ owner: req.body.username, _id: req.params.id }, (err, card) => {
+    Card.findOne({ owner: req.body.owner, _id: req.params.id }, (err, card) => {
         if(err)
           res.send(err);
     // if the card id is incorrect, a message will display and not action will happen
       if(card !== null){
-        var username = req.body.username;
+        var username = req.body.owner;
         // also if the card has status has 'done', we don't allow to update cards that are already finished
           if(card.status !== 'done'){
+            let canBeUpdated = false;
             if(req.body.status)
+              canBeUpdated = true;
               card.status = req.body.status;
 
             if(req.body.title)
+              canBeUpdated = true;
               card.title = req.body.title;
 
             if(req.body.timeEntry)
+              canBeUpdated = true;
               card.timeEntry = req.body.timeEntry;
 
             if(req.body.timeEnd)
+              canBeUpdated = true;
               card.timeEnd = req.body.timeEnd;
 
             if(req.body.estimatedTime)
+              canBeUpdated = true;
               card.estimatedTime = req.body.estimatedTime;
 
             if(req.body.notification)
+              canBeUpdated = true;
               card.notification = req.body.notification;
 
             if(req.body.description)
+              canBeUpdated = true;
               card.description = req.body.description;
 
-            card.save((err) => {
-              if(err){
-                res.json( { err: err.message} );
-              } else {
-                res.json( { message: 'card updated!'});
-                req.io.sockets.emit('mutation', username);
-              }
-            });
+            if(canBeUpdated){
+              card.save((err) => {
+                if(err){
+                  res.status(400).json( { err: err.message} );
+                } else {
+                  res.json( { message: 'card updated!'});
+                  req.io.sockets.emit('mutation', username);
+                }
+              });
+            }else{
+              res.status(400).json( { error: 'Only the follow fields can be updated: status,title,timeEntry,timeEndestimated,Timenotification,description '})
+            }
           }else{
-            res.json( { message: 'Can\'t modify cards that are done'})
+            res.status(400).json( { message: 'Can\'t modify cards that are done'})
           }
       } else {
-        res.json( { error: 'An error has just ocurred while updating the card...'})
+        res.status(400).json( { error: 'id card not found'})
     }
     })
+  })
+
+  .delete( (req, res) => {
+    Card.remove({
+      _id: req.params.id,
+      owner: req.body.owner
+    }, function(err, card){
+      if(err)
+        res.send(err);
+        if(card.result.n > 0){
+          res.status(200).json({message: 'Card deleted', card })
+        } else {
+          res.status(400).json({error:'Error while deleting the card'})
+        }
+    });
   });
 
   router.route('/cards/team/:team')

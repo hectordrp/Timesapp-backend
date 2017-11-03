@@ -45,4 +45,5 @@ userSchema.post('save', (doc) => {
   console.log('%s has been saved', doc.username);
 })
 
+
 module.exports = mongoose.model('User', userSchema);
