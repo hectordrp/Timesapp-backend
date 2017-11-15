@@ -133,10 +133,10 @@ router.route('/cards')
 .post( (req, res) => {
   var card = new Card();
   card.title = req.body.title;
-  card.owner = req.body.username;
+  card.owner = req.body.owner;
 
-  if(req.body.team)
-    card.ownerTeam = req.body.team;
+  if(req.body.ownerTeam)
+    card.ownerTeam = req.body.ownerTeam;
 
   if(req.body.estimatedTime)
     card.estimatedTime = req.body.estimatedTime;
@@ -201,8 +201,9 @@ router.route('/card/:id')
 
   .put( (req, res) => {
     Card.findOne({ owner: req.body.owner, _id: req.params.id }, (err, card) => {
-        if(err)
+        if(err){
           res.send(err);
+        }
     // if the card id is incorrect, a message will display and not action will happen
       if(card !== null){
         var username = req.body.owner;

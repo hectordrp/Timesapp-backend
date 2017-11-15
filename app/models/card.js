@@ -4,13 +4,12 @@ var Schema       = mongoose.Schema;
 
 var cardSchema   = new Schema({
       status: { type: String, required: true, minlength: 3, maxlength: 8, trim: true, default: 'todo' },
-      title: { type: String, required: true, minlength: 1, maxlength: 100},
+      title: { type: String, minlength: 1, maxlength: 100, default: 'Title here'},
       owner: { type: String, required: true, lowercase: true, minlength: 6, maxlength: 20},
       ownerTeam: { type: String, required: true, lowercase: true, minlength: 4, maxlength: 20, default: null},
       timeEntry: { type: Date},
       timeEnd: { type: Date},
       spentTime: {type: Number},
-      _id: { type: Schema.Types.ObjectId, required:true, index:true, auto:true},
       estimatedTime: {type: Number, default: null},
       notification: {type: Boolean, default: true},
       description: { type: String, minlength: 0, maxlength: 300, default: null},
