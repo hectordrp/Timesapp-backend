@@ -4,7 +4,7 @@ let chaiHttp = require('chai-http');
 const expect = require('chai').expect;
 
 chai.use(chaiHttp);
-const url= 'http://localhost:8080';
+const url= 'http://localhost:3000';
 
 // users
 

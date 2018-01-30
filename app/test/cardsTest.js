@@ -4,7 +4,7 @@ let chaiHttp = require('chai-http');
 const expect = require('chai').expect;
 
 chai.use(chaiHttp);
-const url= 'http://localhost:8080';
+const url= 'http://localhost:3000';
 
 // cards
 
@@ -61,10 +61,10 @@ describe('Add an card with a fictional user: ', () =>{
   it(`Should add the card`, (done) => {
     chai.request(url)
       .post('/api/cards')
-      .send({username:'test123', title:'Testing...', team:'QA Group'})
+      .send({owner:'test123', title:'Testing...', ownerTeam:'QA Group'})
       .end( (err,res) => {
         // console.log(res.body);
-        let cardId = res.body.card._id;
+        // let cardId = res.body.card._id;
         expect(res).to.have.status(200);
         done();
       });
@@ -83,20 +83,25 @@ describe('Get cars from an user: ', () => {
   });
 });
 
-// describe('Modify a card: ', () => {
-//   it('Should modify the card', (done) => {
-//     chai.request(url)
-//       .get('/api/cards/test123')
-//       .end( (err, res) => {
-//         // console.log(res.body);
-//         let cardId = res.body.cards[0]._id;
-//         expect(res).to.have.status(200);
-//         chai.request(url)
-//           .put('/api/card/' + cardId)
-//           .send({owner: 'test123', status: 'done', })
-//
-//   })
-// })
+describe('Modify a card: ', () => {
+  it('Should modify the card', (done) => {
+    chai.request(url)
+      .get('/api/cards/test123')
+      .end( (err, res) => {
+        // console.log(res.body);
+        let cardId = res.body.cards[0]._id;
+        expect(res).to.have.status(200);
+        chai.request(url)
+          .put('/api/card/' + cardId)
+          .send({owner: 'test123', status: 'done', })
+          .end( (err, res) => {
+            expect(res).to.have.status(200);
+            done();
+          })
+        })
+  });
+});
+
 describe('Delete a card: ', () =>{
   it(`Should delete the card`, (done) => {
     chai.request(url)
