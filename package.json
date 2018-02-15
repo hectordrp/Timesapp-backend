@@ -4,6 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
+    "start": "nodemon .\\server",
     "test": "mocha app\\test\\*.js --timeout 15000"
   },
   "author": "",

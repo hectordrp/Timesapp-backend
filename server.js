@@ -5,7 +5,8 @@
 const express    = require('express');       // call express
 const bodyParser = require('body-parser');   // request parser
 const mongoose   = require('mongoose');      // database ORM
-const api = require('./app/routes/api');     // Our Api routes
+const users = require('./app/routes/users');     // Our Api routes
+const cards = require('./app/routes/cards');
 const app        = express();                // define our app using express
 const jwt = require('express-jwt');
 const jwksRsa = require('jwks-rsa');
@@ -14,19 +15,7 @@ const server = http.createServer(app);
 const io = require('socket.io').listen(server);
 const dbUri = 'mongodb://pepe:q1w2e3r4t5@ds163034.mlab.com:63034/timeapp'; // mongodb Url
 
-
-server.on('error', function (err) {
-  console.log('error en el servidor -> ', err.Error);
-  server.close();
-});
-
-// configure app to use bodyParser()
-// this will let us get the data from a POST
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-
 var port = process.env.PORT || 3000;        // set our port
-
 
 // auth0
 const checkJwt = jwt({
@@ -41,17 +30,37 @@ const checkJwt = jwt({
     algorithms: ['RS256']
 });
 
+// MIDDLEWARE //
+// configure app to use bodyParser()
+// this will let us get the data from a POST
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+// Make io accessible to our router
+app.use(function (req,res,next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  req.io = io;
+  next();
+  });
+// app.use(checkJwt);
+app.use('/api', users, cards);
+app.use( (err, req, res, next) => {
+  console.error(`This was catched with the middleman \n ${err}`);
+  res.status(400).json(`{ error: ${err}}`);
+  next();
+});
+
 // START THE SERVER
 // =============================================================================
 
 mongoose.connect(dbUri, { useMongoClient: true}, (err) => {
       if(err)
-        return console.log('An error just ocurred ', err);
+        return console.error('An error just ocurred \n', err);
 
       console.log('Connected to database');
 
       server.listen(port,() => {
-            console.log('Magic happens on port ' + port),
+            console.log(`Magic happens on port  ${port}`),
             io.on('connection', function(socket) {
               console.log("client connect");
               socket.emit('test','ola wey desde mi selvidol');
@@ -62,17 +71,11 @@ mongoose.connect(dbUri, { useMongoClient: true}, (err) => {
           });
         });
 
-// Make io accessible to our router
-app.use(function(req,res,next){
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  req.io = io;
-  next();
-  });
+// Event error handler //
 
-// REGISTER OUR ROUTES -------------------------------
-// all of our routes will be prefixed with /api
-// app.use(checkJwt);
-app.use('/api', api);
+server.on('error', function (err) {
+  console.log('SERVER ERROR \n ', err.Error);
+  server.close();
+});
 
 module.exports = app;
