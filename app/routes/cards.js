@@ -99,9 +99,9 @@ function createCard(req, res) {
     card.description = req.body.description;
 
   card.save( (err) => {
-    if(err){
+    if (err) {
       res.status(400).send({ errmsg: err.message});
-    }else{
+    } else {
       res.status(200).json({ card: card});
    }
   });

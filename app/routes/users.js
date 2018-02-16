@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();  // get an instance of the express Router
 const User = require('../models/user');   // our user model
-const Card = require('../models/card');   // our card model
 
 // ROUTES FOR OUR API
 // =============================================================================
@@ -11,117 +10,128 @@ router.use( function(req, res, next) {
   next();
 });
 
-
-
-
 // on routes that end in /users
 // ---------------------------------------------------
 router.route('/users')
-  .post( (req, res) => {
-    var user = new User();
-    user.username = req.body.username;
-    user.email = req.body.email
-    if(req.body.name)
-      user.name = req.body.name;
-
-    if(req.body.role)
-      user.role = req.body.role;
-
-    if(req.body.avatar)
-      user.settings.avatar = req.body.avatar;
-
-    user.save( (err) => {
-      if(err){
-        res.status(400).send({ errmsg: err.message});
-      }else{
-        res.json({ message: user});
-     }
-    });
-
-  })
-
-  .get( (req, res) => {
-    User.find( (err, users) => {
-      if (err)
-        res.send(err);
-
-      res.json(users);
-    })
-
-  });
+  .get(getUsers)
+  .post(createUser)
 
 // on routes that end in /users/:username
 // ----------------------------------------------------
-
 router.route('/user/:username')
-  .get( (req, res) => {
-    User.find({username: req.params.username}, (err, user) => {
-      if(err)
-        res.send(err);
+  .get(getUser)
+  .put(updateUser)
+  .delete(removeUser)
 
-      if(user.length === 0){
-        res.status(400).send({ errmsg: 'user not found'});
+
+  async function getUsers(req, res) {
+    try {
+      await User.find()
+        .then( (users) => {
+          res.status(200).json(users)
+        })
+    } catch (err) {
+      res.status(503).send(err)
+    }
+  }
+
+   async function createUser(req, res) {
+    try {
+      await User.create(req.body)
+        .then( (user) => {
+          res.status(201).json({ message: user})
+        })
+    } catch (e) {
+      res.status(400).send({ errmsg: e.message})
+    }
+  }
+
+  async function getUser(req, res) {
+    try {
+      await User.findOne({username: req.params.username})
+        .then((user) => {
+          if (user) {
+            res.status(200).json({ user: user });
+          } else {
+            res.status(404).send({ errmsg: 'user not found'});
+          }
+        })
+    } catch (e) {
+      res.status(503).send({ errmsg: e})
+    }
+  }
+
+  async function updateUser(req, res) {
+    let bodyIsEmpty = isEmptyObject(req.body)
+    if (bodyIsEmpty) {
+      return res.status(400).send({ err: `Body can't be empty`})
+    }
+
+    let canBeUpdated = checkRequest(req.body)
+    if (!canBeUpdated) {
+      return res.status(400).send({ err: `the only fields that you can update are the follows: name, team, role, avatar, notificationTime, workTime`})
+    }
+
+    try {
+        await User.findById(req.params.username)
+          .then((user) => {
+            fillFields(req.body, user)
+            user.save()
+          .then((updatedUser) => res.status(200).send({ message: updatedUser }))
+        })
+    } catch (e) {
+      console.err(e);
+      res.status(400).send({ err: e })
+    }
+  }
+
+async function removeUser(req, res) {
+  await User.remove({_id: req.params.username})
+    .then((user) => {
+      if(user.result.n > 0){
+        res.status(200).json({message: 'User deleted', user })
       } else {
-      res.json({user: user});
+        res.status(503).json({error:'Error while deleting user'})
       }
     })
-  })
+}
 
-  .put( (req, res) => {
-    User.findOne({username: req.params.username}, (err, user) => {
-        if(err)
-          res.send(err);
-  //If user exist and the request has parameters it will modify the user
-      if(user !== null && Object.keys(req.body).length > 0){
-        let canBeUpdated = false;
-        if(req.body.name)
-          canBeUpdated = true;
-          user.name = req.body.name;
+function isEmptyObject(obj) {
+  return !Object.keys(obj).length;
+}
 
-        if(req.body.notificationTime)
-          canBeUpdated = true;
-          user.settings.notificationTime = req.body.notificationTime;
+function checkRequest(req) {
+  var allowedFields = ['name', 'team', 'role', 'avatar', 'notificationTime', 'workTime']
+  var keys = Object.keys(req)
 
-        if(req.body.workTime)
-          canBeUpdated = true;
-          user.settings.workTime = req.body.workTime;
+  for (var i = 0; i < keys.length; i++) {
+    if (allowedFields.indexOf(keys[i]) > -1)
+      return true
+  }
 
-        if(canBeUpdated){
-          user.save((err) => {
-            if(err){
-              res.status(400).json({ error: err.message});
-            } else {
-              res.json( { message: 'User has been updated!'});
-            }
-          });
-        } else {
-          res.status(400).json({error: 'only name, notificationTime, workTime can be edited'})
-        }
+  return false
+}
 
-      } else {
-        res.status(400).json( { error: 'An error has just ocurred while updating...'})
-    }
-    })
-  })
+function fillFields(req, user) {
+  if (req.name)
+    user.name = req.name
 
-  .delete( (req, res) => {
-    User.remove({
-      username: req.params.username,
-      _id: req.body.userId
-    }, function(err, user){
-      if(err)
-        res.send(err);
+  if (req.team)
+    user.team = req.team
 
-        if(user.result.n > 0){
-          res.status(200).json({message: 'User deleted', user })
-        } else {
-          res.status(400).json({error:'Error while deleting user'})
-        }
-    });
-  });
+  if (req.role)
+    user.role = req.role
 
+  if (req.avatar)
+    user.settings.avatar = req.avatar
 
+  if (req.notificationTime)
+    user.settings.notificationTime = req.notificationTime
 
+  if (req.workTime)
+    user.settings.workTime = req.workTime
 
+  return user
+}
 
 module.exports = router;

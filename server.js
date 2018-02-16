@@ -17,7 +17,7 @@ const dbUri = 'mongodb://pepe:q1w2e3r4t5@ds163034.mlab.com:63034/timeapp'; // mo
 
 var port = process.env.PORT || 3000;        // set our port
 
-// auth0
+// auth0 config
 const checkJwt = jwt({
     secret: jwksRsa.expressJwtSecret({
         cache: true,
@@ -36,25 +36,33 @@ const checkJwt = jwt({
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 // Make io accessible to our router
-app.use(function (req,res,next) {
+app.use((req,res,next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   req.io = io;
   next();
-  });
+});
+// auth0 middlware //
 // app.use(checkJwt);
+// routes middleware //
 app.use('/api', users, cards);
+// Error handler middleware //
 app.use( (err, req, res, next) => {
   console.error(`This was catched with the middleman \n ${err}`);
-  res.status(400).json(`{ error: ${err}}`);
+  res.status(400).json({ error: err});
   next();
+});
+// Event error handler //
+server.on('error', function (err) {
+  console.log('SERVER ERROR \n ', err.Error);
+  server.close();
 });
 
 // START THE SERVER
 // =============================================================================
-
+mongoose.Promise = global.Promise;
 mongoose.connect(dbUri, { useMongoClient: true}, (err) => {
-      if(err)
+      if (err)
         return console.error('An error just ocurred \n', err);
 
       console.log('Connected to database');
@@ -70,12 +78,5 @@ mongoose.connect(dbUri, { useMongoClient: true}, (err) => {
             });
           });
         });
-
-// Event error handler //
-
-server.on('error', function (err) {
-  console.log('SERVER ERROR \n ', err.Error);
-  server.close();
-});
 
 module.exports = app;
