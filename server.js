@@ -34,7 +34,10 @@ const checkJwt = jwt({
 
 // MIDDLEWARE //
 // logger //
-app.use(logger('dev'));
+if (app.get('env') !== 'production') {
+// debugging middleware in development only  
+  app.use(logger('dev'));
+}
 // configure app to use bodyParser()
 // this will let us get the data from a POST
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -46,6 +49,8 @@ app.use((req,res,next) => {
   req.io = io;
   next();
 });
+// disable express identification //
+app.disable('x-powered-by');
 // auth0 middlware //
 // app.use(checkJwt);
 // routes middleware //

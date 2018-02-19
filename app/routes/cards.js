@@ -46,7 +46,7 @@ function getCards(req, res, param) {
       res.status(400).send({error: err});
       return next(err);
     }
-    res.status(201).json({cards: cards});
+    res.status(200).json({cards: cards});
   })
 }
 
