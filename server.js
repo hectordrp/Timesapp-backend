@@ -8,6 +8,7 @@ const mongoose   = require('mongoose');      // database ORM
 const users = require('./app/routes/users');     // Our Api routes
 const cards = require('./app/routes/cards');
 const app        = express();                // define our app using express
+var logger = require('morgan');
 const jwt = require('express-jwt');
 const jwksRsa = require('jwks-rsa');
 const http       = require('http');
@@ -15,6 +16,7 @@ const server = http.createServer(app);
 const io = require('socket.io').listen(server);
 const dbUri = 'mongodb://pepe:q1w2e3r4t5@ds163034.mlab.com:63034/timeapp'; // mongodb Url
 
+var config = require('./app/_config');
 var port = process.env.PORT || 3000;        // set our port
 
 // auth0 config
@@ -31,6 +33,8 @@ const checkJwt = jwt({
 });
 
 // MIDDLEWARE //
+// logger //
+app.use(logger('dev'));
 // configure app to use bodyParser()
 // this will let us get the data from a POST
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -53,19 +57,25 @@ app.use( (err, req, res, next) => {
   next();
 });
 // Event error handler //
-server.on('error', function (err) {
-  console.log('SERVER ERROR \n ', err.Error);
-  server.close();
+server.on('error', (e) => {
+  if (e.code === 'EADDRINUSE') {
+    console.error('Address in use -> ' + e);
+    setTimeout(() => {
+      server.close();
+    }, 1000);
+  } else {
+    console.error(e);
+  }
 });
 
 // START THE SERVER
 // =============================================================================
 mongoose.Promise = global.Promise;
-mongoose.connect(dbUri, { useMongoClient: true}, (err) => {
+mongoose.connect(config.mongoURI[app.settings.env], { useMongoClient: true}, (err) => {
       if (err)
         return console.error('An error just ocurred \n', err);
 
-      console.log('Connected to database');
+      console.log(`Connected to database ${config.db[app.settings.env]}`);
 
       server.listen(port,() => {
             console.log(`Magic happens on port  ${port}`),

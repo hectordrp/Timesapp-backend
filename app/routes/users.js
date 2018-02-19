@@ -6,7 +6,6 @@ const User = require('../models/user');   // our user model
 // =============================================================================
 
 router.use( function(req, res, next) {
-  console.log('From /routes/user');
   next();
 });
 
@@ -18,11 +17,13 @@ router.route('/users')
 
 // on routes that end in /users/:username
 // ----------------------------------------------------
-router.route('/user/:username')
-  .get(getUser)
+router.get('/user/:username', getUser)
+
+  // on routes that end in /users/:id
+  // ----------------------------------------------------
+router.route('/user/:id')
   .put(updateUser)
   .delete(removeUser)
-
 
   async function getUsers(req, res) {
     try {
@@ -73,38 +74,45 @@ router.route('/user/:username')
     }
 
     try {
-        await User.findById(req.params.username)
+        await User.findById(req.params.id)
           .then((user) => {
             fillFields(req.body, user)
             user.save()
-          .then((updatedUser) => res.status(200).send({ message: updatedUser }))
+          .then((updatedUser) => res.status(200).send({ user: updatedUser }))
         })
     } catch (e) {
-      console.err(e);
+      console.error(e);
       res.status(400).send({ err: e })
     }
   }
 
 async function removeUser(req, res) {
-  await User.remove({_id: req.params.username})
-    .then((user) => {
-      if(user.result.n > 0){
-        res.status(200).json({message: 'User deleted', user })
-      } else {
-        res.status(503).json({error:'Error while deleting user'})
-      }
-    })
+  try {
+    await User.remove({_id: req.params.id})
+      .then((user) => {
+        if(user.result.n > 0){
+          res.status(200).json({message: 'User deleted', user })
+        } else {
+          res.status(503).json({error:'Error while deleting user'})
+        }
+      })
+  } catch (e) {
+      res.status(503).send({ errmsg: e})
+  }
 }
 
+// Return false if the object (req.body) is empty //
 function isEmptyObject(obj) {
   return !Object.keys(obj).length;
 }
 
+// Check if the fields provided in the request can be modified //
 function checkRequest(req) {
   var allowedFields = ['name', 'team', 'role', 'avatar', 'notificationTime', 'workTime']
   var keys = Object.keys(req)
 
   for (var i = 0; i < keys.length; i++) {
+    // the result should return > -1 if the request key appears in the allowedFields array //
     if (allowedFields.indexOf(keys[i]) > -1)
       return true
   }

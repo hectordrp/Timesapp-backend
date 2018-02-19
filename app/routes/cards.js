@@ -5,7 +5,6 @@ const Card = require('../models/card');   // our card model
 
 
 router.use( (req, res, next) => {
-  console.log('From /routes/card');
   next();
 });
 
