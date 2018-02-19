@@ -51,6 +51,7 @@ router.route('/user/:id')
     try {
       await User.findOne({username: req.params.username})
         .then((user) => {
+          console.log(user);
           if (user) {
             res.status(200).json({ user: user });
           } else {

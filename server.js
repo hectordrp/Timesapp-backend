@@ -8,7 +8,8 @@ const mongoose   = require('mongoose');      // database ORM
 const users = require('./app/routes/users');     // Our Api routes
 const cards = require('./app/routes/cards');
 const app        = express();                // define our app using express
-var logger = require('morgan');
+const compression = require('compression');
+const logger = require('morgan');
 const jwt = require('express-jwt');
 const jwksRsa = require('jwks-rsa');
 const http       = require('http');
@@ -35,7 +36,7 @@ const checkJwt = jwt({
 // MIDDLEWARE //
 // logger //
 if (app.get('env') !== 'production') {
-// debugging middleware in development only  
+// debugging middleware in development only
   app.use(logger('dev'));
 }
 // configure app to use bodyParser()
@@ -43,9 +44,9 @@ if (app.get('env') !== 'production') {
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 // Make io accessible to our router
-app.use((req,res,next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   req.io = io;
   next();
 });
@@ -53,12 +54,14 @@ app.use((req,res,next) => {
 app.disable('x-powered-by');
 // auth0 middlware //
 // app.use(checkJwt);
+// compression middleware //
+app.use(compression());
 // routes middleware //
 app.use('/api', users, cards);
 // Error handler middleware //
 app.use( (err, req, res, next) => {
   console.error(`This was catched with the middleman \n ${err}`);
-  res.status(400).json({ error: err});
+  res.status(400).json({ error: err.errmsg});
   next();
 });
 // Event error handler //
